@@ -5,6 +5,7 @@ import Card from "./components/Card";
 import CardDetails from "./components/CardDetails";
 import { ToastContainer, toast } from "react-toastify";
 import ReactPaginate from "react-paginate";
+import loader from "./assets/loader.gif";
 function App() {
   console.log(`${process.env.REACT_APP_VERY_PRIVATE_KEY}`);
   const [address, setAddress] = useState("");
@@ -12,6 +13,7 @@ function App() {
   const [clickedItem, setClickedItem] = useState("");
   const [showDetails, setShowDetails] = useState(false);
   const [pageNum, setPageNum] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   const nftPerPage = 8;
   const visitedPage = pageNum * nftPerPage;
@@ -37,6 +39,7 @@ function App() {
       toast.error("Invalid Address entered, please try again", toastOptions);
       return;
     }
+    setLoading(true);
     try {
       await fetch(
         `https://deep-index.moralis.io/api/v2/${address}/nft?chain=eth&format=decimal&limit=30&normalizeMetadata=true`,
@@ -48,6 +51,7 @@ function App() {
       )
         .then((res) => res.json())
         .then((result) => setData(result.result));
+      setLoading(false);
       setAddress("");
     } catch (err) {
       console.log(err.message);
@@ -58,55 +62,63 @@ function App() {
 
   return (
     <>
-      <Container className="App">
-        <div>
-          <input
-            type="text"
-            placeholder="enter wallet address..."
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-          />
-          <button onClick={handleSubmit}>Submit</button>
+      {loading ? (
+        <div className="form__loader">
+          <img src={loader} alt="loader" className="loader" />
         </div>
-        <Row>
-          {data &&
-            displayPage.map((item) => (
-              <Col
-                lg="3"
-                md="4"
-                sm="6"
-                xs="6"
-                key={item.token_id}
-                className="mt-5"
-              >
-                <Card
-                  item={item}
-                  data={data}
-                  setClickedItem={setClickedItem}
-                  setShowDetails={setShowDetails}
+      ) : (
+        <>
+          <Container className="App">
+            <div>
+              <input
+                type="text"
+                placeholder="enter wallet address..."
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+              />
+              <button onClick={handleSubmit}>Submit</button>
+            </div>
+            <Row>
+              {data &&
+                displayPage.map((item) => (
+                  <Col
+                    lg="3"
+                    md="4"
+                    sm="6"
+                    xs="6"
+                    key={item.token_id}
+                    className="mt-5"
+                  >
+                    <Card
+                      item={item}
+                      data={data}
+                      setClickedItem={setClickedItem}
+                      setShowDetails={setShowDetails}
+                    />
+                  </Col>
+                ))}
+            </Row>
+            {data.length !== 0 && (
+              <div>
+                <ReactPaginate
+                  pageCount={pageCount}
+                  onPageChange={changePage}
+                  previousLabel="Prev"
+                  nextLabel="Next"
+                  containerClassName="paginationBtns"
                 />
-              </Col>
-            ))}
-        </Row>
-        {data.length !== 0 && (
-          <div>
-            <ReactPaginate
-              pageCount={pageCount}
-              onPageChange={changePage}
-              previousLabel="Prev"
-              nextLabel="Next"
-              containerClassName="paginationBtns"
-            />
-          </div>
-        )}
-        {showDetails && (
-          <CardDetails
-            clickedItem={clickedItem}
-            setShowDetails={setShowDetails}
-          />
-        )}
-      </Container>
-      <ToastContainer />
+              </div>
+            )}
+            {showDetails && (
+              <CardDetails
+                clickedItem={clickedItem}
+                setShowDetails={setShowDetails}
+              />
+            )}
+          </Container>
+          <ToastContainer />
+        </>
+      )}
     </>
   );
 }
